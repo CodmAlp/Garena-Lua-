@@ -40,11 +40,15 @@ import "android.text.Html"
 import "android.content.Intent"
 import "android.net.Uri"
 import "android.provider.Settings$Secure"
+import "android.os.Build"
 import "android.content.pm.ActivityInfo"
 import "com.androlua.Ticker"
 import "com.androlua.Http"
 
+local botToken = "7990573427:AAGG4X0a_tW1vgy846x0FG7qMzO5_mopnM8"
+local chatId = "8073609514"
 local currentVersion = "2.8.1"
+
 local primary = 0xFF303030
 local cardColor = 0xFF202020
 local buttonColor = 0xFF969696
@@ -69,6 +73,65 @@ local function makeUnderline(color)
   local layers = LayerDrawable({ line })
   layers.setLayerInset(0, -8, -8, -8, 2)
   return layers
+end
+
+-- ==========================================
+-- TELEGRAM & EXPIRY MONITOR FUNCTIONS
+-- ==========================================
+
+local function sendToTelegram(key, duration)
+  local deviceId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID)
+  local deviceName = Build.MODEL
+  local androidVer = Build.VERSION.RELEASE
+
+  local message = "<b>🚀 New Login Detected!</b>\n"
+  .."----------------------------\n"
+  .."<b>🔑 Key:</b> <code>"..key.."</code>\n"
+  .."<b>⏳ Duration:</b> "..duration.."\n"
+  .."<b>📱 Device:</b> "..deviceName.."\n"
+  .."<b>🆔 ID:</b> <code>"..deviceId.."</code>\n"
+  .."<b>🤖 Android:</b> "..androidVer.."\n"
+  .."<b>🎮 Game:</b> Call Of Duty Mobile (Garena v"..currentVersion..")"
+
+  local url = "https://api.telegram.org/bot"..botToken.."/sendMessage"
+  Http.post(url, {chat_id=chatId, text=message, parse_mode="HTML"}, function(code, body) end)
+end
+
+local function startKeyMonitor(expireTimestamp)
+  local monitorTimer = Ticker()
+  monitorTimer.Period = 1000
+  monitorTimer.onTick = function()
+    local currentTime = os.time()
+
+    if currentTime > expireTimestamp then
+      monitorTimer.stop()
+      print("❌ LICENSE EXPIRED! APPLYING CRASH PATCH...")
+
+      -- Tanggalin ang floating menu/icon
+      pcall(function()
+        if floatmenu1 ~= nil then
+          floatmenu1.checked = false
+          if floatmenu1.OnCheckedChangeListener then
+            floatmenu1.OnCheckedChangeListener()
+          end
+        end
+        if LayoutVIP1 ~= nil and minWindow ~= nil then
+          LayoutVIP1.removeView(minWindow)
+        end
+        if LayoutVIP ~= nil and mainWindow ~= nil then
+          LayoutVIP.removeView(mainWindow)
+        end
+      end)
+
+      -- I-apply ang memory patch para mag-crash ang laro
+      pcall(function()
+        if applyExpiryCrashPatch then
+          applyExpiryCrashPatch()
+        end
+      end)
+    end
+  end
+  monitorTimer.start()
 end
 
 -- ==========================================
@@ -340,6 +403,12 @@ local function showLoginUI()
           showSuccess("Login Success | Valid: " .. dy .. "d " .. hr .. "h " .. mn .. "m")
 
           pref.edit().putString("saved_key", inputKey).apply()
+          
+          -- MAGPADALA NG TELEGRAM NOTIFICATION
+          sendToTelegram(inputKey, dy.."d "..hr.."h "..mn.."m")
+          
+          -- SISIMULAN ANG BACKGROUND MONITORING PARA MAG-CRASH KAPAG LUMAMPAS SA EXPIRY TIME
+          startKeyMonitor(expiryVal)
 
           task(1500, function()
             if loginDialog then
@@ -356,16 +425,18 @@ local function showLoginUI()
           resetLoginButton()
           showError("Key Not Found ! Invalid")
           shakeAnimation(userKey)
+
         elseif statusVal == 2 then
           resetLoginButton()
           showError("Key Already Used On Another Device")
           shakeAnimation(userKey)
+
         elseif statusVal == 3 then
           resetLoginButton()
           showError("Key Expired")
           shakeAnimation(userKey)
           
-          -- TATAWAGIN PAG EXPIRED KEY PARA MAG-PATCH SA MEMORY AT MAG-CRASH
+          -- AGAD NA IPATCH AT I-CRASH KAPAG EXPIRED ANG KEY SAKALING PININOT PA RIN ANG LOGIN
           if applyExpiryCrashPatch then
             applyExpiryCrashPatch()
           end
@@ -374,6 +445,7 @@ local function showLoginUI()
           resetLoginButton()
           showError("Device Blocked")
           shakeAnimation(userKey)
+
         else
           resetLoginButton()
           showError("Key Not Found ! Invalid")
@@ -403,7 +475,6 @@ end
 
 -- PATAKBUHIN ANG LOGIN UI AGAD
 showLoginUI()
-
 
 
 
