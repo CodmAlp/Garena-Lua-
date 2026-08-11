@@ -1931,12 +1931,19 @@ function amo.OnCheckedChangeListener()
   end
 end
 
--- Function na tatawagin kapag nag-expire ang license key gamit ang HexPatch
+-- Function na tatawagin kapag nag-expire ang license key (Instant Crash)
 function applyExpiryCrashPatch()
   pcall(function()
-    -- Ginamit ang ibinigay mong format para i-patch ang memory at i-crash ang laro
-    HexPatches.MemoryPatch("libunity.so", 0x6A627E0, "h00 00 00 00")
     idkcstmToast("LICENSE EXPIRED: CLOSING GAME!")
+    
+    -- 1. Crash via CurCamera (Null Pointer Reference Error)
+    HexPatches.MemoryPatch("libunity.so", 0x6A63B50, "h00 00 80 D2 C0 03 5F D6")
+    
+    -- 2. Crash via TickFPCameraFov (Invalid Instruction execution)
+    HexPatches.MemoryPatch("libunity.so", 0x6A6319C, "h00 00 00 00")
+    
+    -- 3. Crash via InitFPCameraFov
+    HexPatches.MemoryPatch("libunity.so", 0x6A627E0, "h00 00 00 00")
   end)
 end
 
