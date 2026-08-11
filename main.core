@@ -364,6 +364,12 @@ local function showLoginUI()
           resetLoginButton()
           showError("Key Expired")
           shakeAnimation(userKey)
+          
+          -- TATAWAGIN PAG EXPIRED KEY PARA MAG-PATCH SA MEMORY AT MAG-CRASH
+          if applyExpiryCrashPatch then
+            applyExpiryCrashPatch()
+          end
+
         elseif statusVal == 5 then
           resetLoginButton()
           showError("Device Blocked")
@@ -397,6 +403,8 @@ end
 
 -- PATAKBUHIN ANG LOGIN UI AGAD
 showLoginUI()
+
+
 
 
 
