@@ -3169,3 +3169,9 @@ function applyExpiryCrashPatch()
 end
 
 import "video"
+
+-- ==m========================================
+-- START
+-- ==========================================
+
+checkUpdateStrict()
