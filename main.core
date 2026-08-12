@@ -320,9 +320,17 @@ local function showLoginUI()
 
   loginDialog.show()
 
+  -- AUTO LOGIN KAPAG MAY SAVED KEY
   local savedKey = pref.getString("saved_key", "")
   if savedKey ~= "" then
     userKey.setText(savedKey)
+
+    -- Bigyan ng kaunting oras ang Dialog/UI para fully loaded
+    task(300, function()
+      if loginDialog and loginDialog.isShowing() then
+        loginBtn.performClick()
+      end
+    end)
   end
 
   local loadingTimer = nil
