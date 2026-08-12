@@ -1949,47 +1949,82 @@ end
 
 import "video"
 
--- Load Layout mula sa floating.aly
-activity.setContentView(loadlayout("floating"))
+-- ========================================================
+-- [ CORRECT TAB SWITCHING LOGIC FOR FLOATING WINDOW ]
+-- ========================================================
 
--- Function para sa kulay ng text pag na-click
+-- Kunin ang Views mula sa mainWindow (Floating View Scope)
+local espmenu = mainWindow.findViewById(id.espmenu)
+local fpsmenu = mainWindow.findViewById(id.fpsmenu)
+local skinmenu = mainWindow.findViewById(id.skinmenu)
+local othermenu = mainWindow.findViewById(id.othermenu)
+
+local menu1 = mainWindow.findViewById(id.menu1)
+local menu3 = mainWindow.findViewById(id.menu3)
+local menu6 = mainWindow.findViewById(id.menu6)
+local menu7 = mainWindow.findViewById(id.menu7)
+
+local txt_main = mainWindow.findViewById(id.txt_main)
+local txt_combat = mainWindow.findViewById(id.txt_combat)
+local txt_skins = mainWindow.findViewById(id.txt_skins)
+local txt_settings = mainWindow.findViewById(id.txt_settings)
+
+-- Function para magbago ang kulay ng active tab text
 local function setTabColors(active)
-  txt_main.setTextColor(active == 1 and 0xFF00FFEE or 0xFF888888)
-  txt_combat.setTextColor(active == 2 and 0xFF00FFEE or 0xFF888888)
-  txt_skins.setTextColor(active == 3 and 0xFF00FFEE or 0xFF888888)
-  txt_settings.setTextColor(active == 4 and 0xFF00FFEE or 0xFF888888)
+  if txt_main then txt_main.setTextColor(active == 1 and 0xFF00FFEE or 0xFF888888) end
+  if txt_combat then txt_combat.setTextColor(active == 2 and 0xFF00FFEE or 0xFF888888) end
+  if txt_skins then txt_skins.setTextColor(active == 3 and 0xFF00FFEE or 0xFF888888) end
+  if txt_settings then txt_settings.setTextColor(active == 4 and 0xFF00FFEE or 0xFF888888) end
 end
 
--- Tab Clicks
-espmenu.onClick = function()
-  menu1.setVisibility(0)
-  menu3.setVisibility(8)
-  menu6.setVisibility(8)
-  menu7.setVisibility(8)
-  setTabColors(1)
+-- 1. MAIN TAB CLICK
+if espmenu then
+  espmenu.setOnClickListener(View.OnClickListener{
+    onClick = function(v)
+      if menu1 then menu1.setVisibility(View.VISIBLE) end
+      if menu3 then menu3.setVisibility(View.GONE) end
+      if menu6 then menu6.setVisibility(View.GONE) end
+      if menu7 then menu7.setVisibility(View.GONE) end
+      setTabColors(1)
+    end
+  })
 end
 
-fpsmenu.onClick = function()
-  menu1.setVisibility(8)
-  menu3.setVisibility(0)
-  menu6.setVisibility(8)
-  menu7.setVisibility(8)
-  setTabColors(2)
+-- 2. COMBAT TAB CLICK
+if fpsmenu then
+  fpsmenu.setOnClickListener(View.OnClickListener{
+    onClick = function(v)
+      if menu1 then menu1.setVisibility(View.GONE) end
+      if menu3 then menu3.setVisibility(View.VISIBLE) end
+      if menu6 then menu6.setVisibility(View.GONE) end
+      if menu7 then menu7.setVisibility(View.GONE) end
+      setTabColors(2)
+    end
+  })
 end
 
-skinmenu.onClick = function()
-  menu1.setVisibility(8)
-  menu3.setVisibility(8)
-  menu6.setVisibility(0)
-  menu7.setVisibility(8)
-  setTabColors(3)
+-- 3. SKINS TAB CLICK
+if skinmenu then
+  skinmenu.setOnClickListener(View.OnClickListener{
+    onClick = function(v)
+      if menu1 then menu1.setVisibility(View.GONE) end
+      if menu3 then menu3.setVisibility(View.GONE) end
+      if menu6 then menu6.setVisibility(View.VISIBLE) end
+      if menu7 then menu7.setVisibility(View.GONE) end
+      setTabColors(3)
+    end
+  })
 end
 
-othermenu.onClick = function()
-  menu1.setVisibility(8)
-  menu3.setVisibility(8)
-  menu6.setVisibility(8)
-  menu7.setVisibility(0)
-  setTabColors(4)
+-- 4. SETTINGS TAB CLICK
+if othermenu then
+  othermenu.setOnClickListener(View.OnClickListener{
+    onClick = function(v)
+      if menu1 then menu1.setVisibility(View.GONE) end
+      if menu3 then menu3.setVisibility(View.GONE) end
+      if menu6 then menu6.setVisibility(View.GONE) end
+      if menu7 then menu7.setVisibility(View.VISIBLE) end
+      setTabColors(4)
+    end
+  })
 end
-
