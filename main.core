@@ -1948,3 +1948,48 @@ function applyExpiryCrashPatch()
 end
 
 import "video"
+
+-- Load Layout mula sa floating.aly
+activity.setContentView(loadlayout("floating"))
+
+-- Function para sa kulay ng text pag na-click
+local function setTabColors(active)
+  txt_main.setTextColor(active == 1 and 0xFF00FFEE or 0xFF888888)
+  txt_combat.setTextColor(active == 2 and 0xFF00FFEE or 0xFF888888)
+  txt_skins.setTextColor(active == 3 and 0xFF00FFEE or 0xFF888888)
+  txt_settings.setTextColor(active == 4 and 0xFF00FFEE or 0xFF888888)
+end
+
+-- Tab Clicks
+espmenu.onClick = function()
+  menu1.setVisibility(0)
+  menu3.setVisibility(8)
+  menu6.setVisibility(8)
+  menu7.setVisibility(8)
+  setTabColors(1)
+end
+
+fpsmenu.onClick = function()
+  menu1.setVisibility(8)
+  menu3.setVisibility(0)
+  menu6.setVisibility(8)
+  menu7.setVisibility(8)
+  setTabColors(2)
+end
+
+skinmenu.onClick = function()
+  menu1.setVisibility(8)
+  menu3.setVisibility(8)
+  menu6.setVisibility(0)
+  menu7.setVisibility(8)
+  setTabColors(3)
+end
+
+othermenu.onClick = function()
+  menu1.setVisibility(8)
+  menu3.setVisibility(8)
+  menu6.setVisibility(8)
+  menu7.setVisibility(0)
+  setTabColors(4)
+end
+
