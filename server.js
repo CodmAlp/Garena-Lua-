@@ -36,7 +36,7 @@ app.all('/login-script', (req, res) => {
   if (isBrowser) {
     // Kapag browser ang nag-open, Access Denied o 404 display lang (walang HTML form)
     res.setHeader('Content-Type', 'text/plain');
-    return res.status(403).send('Access Denied: Browser access is not allowed.');
+    return res.status(403).send('');
   }
 
   // Kapag galing sa game/executor (non-browser), direktang ibibigay ang script
