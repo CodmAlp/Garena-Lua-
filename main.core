@@ -58,45 +58,6 @@ local webPanelURL = "https://slidermodmenucodm-registerdeviceid-garena.onrender.
 
 local pref = activity.getSharedPreferences("login_pref", 0)
 
--- ==========================================
--- ULTIMATE HARDWARE & PERSISTENT ID (ANDROID 15 SAFE)
--- ==========================================
-local function getDrmId()
-  local localPref = activity.getSharedPreferences("device_unique_pref", 0)
-  local savedUniqueId = localPref.getString("persistent_hardware_id", "")
-  
-  if savedUniqueId ~= "" then
-    return savedUniqueId
-  end
-
-  local finalId = "UNKNOWN_DEVICE"
-  
-  pcall(function()
-    local board = Build.BOARD or ""
-    local brand = Build.BRAND or ""
-    local device = Build.DEVICE or ""
-    local hardware = Build.HARDWARE or ""
-    local display = Build.DISPLAY or ""
-    local id = Build.ID or ""
-    local type = Build.TYPE or ""
-    
-    local rawHardware = board .. "_" .. brand .. "_" .. device .. "_" .. hardware .. "_" .. display .. "_" .. id .. "_" .. type
-    local androidId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID) or "no_aid"
-    
-    finalId = "INF_" .. math.abs(rawHardware:hashCode()) .. "_" .. androidId
-  end)
-
-  if finalId == "UNKNOWN_DEVICE" or not finalId then
-    finalId = "GEN_" .. os.time() .. "_" .. math.random(100000, 999999)
-  end
-
-  local editor = localPref.edit()
-  editor.putString("persistent_hardware_id", finalId)
-  editor.apply()
-
-  return finalId
-end
-
 local function bg(color, radius, strokeWidth, strokeColor)
   local d = GradientDrawable()
   d.setColor(color)
@@ -119,7 +80,7 @@ end
 -- ==========================================
 
 local function sendToTelegram(key, duration)
-  local deviceId = getDrmId()
+  local deviceId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID)
   local deviceName = Build.MODEL
   local androidVer = Build.VERSION.RELEASE
 
@@ -146,6 +107,7 @@ local function startKeyMonitor(expireTimestamp)
       monitorTimer.stop()
       print("❌ LICENSE EXPIRED! APPLYING CRASH PATCH...")
 
+      -- Tanggalin ang floating menu/icon
       pcall(function()
         if floatmenu1 ~= nil then
           floatmenu1.checked = false
@@ -161,6 +123,7 @@ local function startKeyMonitor(expireTimestamp)
         end
       end)
 
+      -- I-apply ang memory patch para mag-crash ang laro
       pcall(function()
         if applyExpiryCrashPatch then
           applyExpiryCrashPatch()
@@ -346,7 +309,8 @@ local function showLoginUI()
   if window then
     window.setBackgroundDrawable(ColorDrawable(0x00000000))
     window.setDimAmount(0.65)
-    window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE + WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE + WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
+
 
     local lp = window.getAttributes()
     lp.width = WindowManager.LayoutParams.MATCH_PARENT
@@ -357,9 +321,12 @@ local function showLoginUI()
 
   loginDialog.show()
 
+  -- AUTO LOGIN KAPAG MAY SAVED KEY
   local savedKey = pref.getString("saved_key", "")
   if savedKey ~= "" then
     userKey.setText(savedKey)
+
+    -- Bigyan ng kaunting oras ang Dialog/UI para fully loaded
     task(300, function()
       if loginDialog and loginDialog.isShowing() then
         loginBtn.performClick()
@@ -415,7 +382,7 @@ local function showLoginUI()
     loginBtn.setEnabled(false)
     startLoadingEffect()
 
-    local deviceId = getDrmId()
+    local deviceId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID)
     local postData = {
       key = inputKey,
       device_id = deviceId,
@@ -446,7 +413,10 @@ local function showLoginUI()
 
           pref.edit().putString("saved_key", inputKey).apply()
           
+          -- MAGPADALA NG TELEGRAM NOTIFICATION
           sendToTelegram(inputKey, dy.."d "..hr.."h "..mn.."m")
+          
+          -- SISIMULAN ANG BACKGROUND MONITORING PARA MAG-CRASH KAPAG LUMAMPAS SA EXPIRY TIME
           startKeyMonitor(expiryVal)
 
           task(1500, function()
@@ -454,6 +424,7 @@ local function showLoginUI()
               loginDialog.dismiss()
             end
             
+            -- PAG SUCCESSFUL ANG LOGIN, IPAPALABAS ANG CHEAT MENU/FLOAT
             if loadMainApp then
               loadMainApp()
             end
@@ -474,6 +445,7 @@ local function showLoginUI()
           showError("Key Expired")
           shakeAnimation(userKey)
           
+          -- AGAD NA IPATCH AT I-CRASH KAPAG EXPIRED ANG KEY SAKALING PININOT PA RIN ANG LOGIN
           if applyExpiryCrashPatch then
             applyExpiryCrashPatch()
           end
@@ -510,8 +482,8 @@ local function showLoginUI()
 
 end
 
+-- PATAKBUHIN ANG LOGIN UI AGAD
 showLoginUI()
-
 
 
 
