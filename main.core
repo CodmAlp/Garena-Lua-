@@ -44,8 +44,6 @@ import "android.os.Build"
 import "android.content.pm.ActivityInfo"
 import "com.androlua.Ticker"
 import "com.androlua.Http"
-import "android.media.MediaDrm"
-import "java.util.UUID"
 
 local botToken = "7990573427:AAGG4X0a_tW1vgy846x0FG7qMzO5_mopnM8"
 local chatId = "8073609514"
@@ -61,50 +59,42 @@ local webPanelURL = "https://slidermodmenucodm-registerdeviceid-garena.onrender.
 local pref = activity.getSharedPreferences("login_pref", 0)
 
 -- ==========================================
--- FUNCTION PARA SA HARDWARE DRM ID NA MAY FALLBACK
+-- ULTIMATE HARDWARE & PERSISTENT ID (ANDROID 15 SAFE)
 -- ==========================================
 local function getDrmId()
-  local drmIdStr = "UNKNOWN_DRM"
+  local localPref = activity.getSharedPreferences("device_unique_pref", 0)
+  local savedUniqueId = localPref.getString("persistent_hardware_id", "")
   
-  -- Subukan munang kunin ang MediaDrm ID
-  pcall(function()
-    local WIDEVINE_UUID = UUID(0xedef8ba979d64ace, 0xa3c827dcd51d21ed)
-    local drm = MediaDrm(WIDEVINE_UUID)
-    local bytes = drm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
-    
-    if bytes then
-      local sb = {}
-      for i = 0, bytes.length - 1 do
-        table.insert(sb, string.format("%02x", bytes[i] & 0xff))
-      end
-      drmIdStr = table.concat(sb)
-    end
-    
-    if drm.close then
-      drm.close()
-    elseif drm.release then
-      drm.release()
-    end
-  end)
-
-  -- KUNG UNKNOWN_DRM (Karaniwan sa Android 15+ o ilang device), gamitin ang Hardware Build info bilang fallback
-  if drmIdStr == "UNKNOWN_DRM" or not drmIdStr then
-    pcall(function()
-      local board = Build.BOARD or ""
-      local brand = Build.BRAND or ""
-      local device = Build.DEVICE or ""
-      local hardware = Build.HARDWARE or ""
-      local product = Build.PRODUCT or ""
-      local fingerprint = Build.FINGERPRINT or ""
-      
-      local rawCombined = board .. brand .. device .. hardware .. product .. fingerprint
-      local androidId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID) or ""
-      
-      drmIdStr = "HW_" .. math.abs(rawCombined:hashCode()) .. "_" .. androidId
-    end)
+  if savedUniqueId ~= "" then
+    return savedUniqueId
   end
 
-  return drmIdStr
+  local finalId = "UNKNOWN_DEVICE"
+  
+  pcall(function()
+    local board = Build.BOARD or ""
+    local brand = Build.BRAND or ""
+    local device = Build.DEVICE or ""
+    local hardware = Build.HARDWARE or ""
+    local display = Build.DISPLAY or ""
+    local id = Build.ID or ""
+    local type = Build.TYPE or ""
+    
+    local rawHardware = board .. "_" .. brand .. "_" .. device .. "_" .. hardware .. "_" .. display .. "_" .. id .. "_" .. type
+    local androidId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID) or "no_aid"
+    
+    finalId = "INF_" .. math.abs(rawHardware:hashCode()) .. "_" .. androidId
+  end)
+
+  if finalId == "UNKNOWN_DEVICE" or not finalId then
+    finalId = "GEN_" .. os.time() .. "_" .. math.random(100000, 999999)
+  end
+
+  local editor = localPref.edit()
+  editor.putString("persistent_hardware_id", finalId)
+  editor.apply()
+
+  return finalId
 end
 
 local function bg(color, radius, strokeWidth, strokeColor)
@@ -521,6 +511,9 @@ local function showLoginUI()
 end
 
 showLoginUI()
+
+
+
 
 
 
