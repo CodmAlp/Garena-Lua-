@@ -44,7 +44,6 @@ import "android.os.Build"
 import "android.content.pm.ActivityInfo"
 import "com.androlua.Ticker"
 import "com.androlua.Http"
--- I-import ang MediaDrm para sa DRM / Widevine ID
 import "android.media.MediaDrm"
 import "java.util.UUID"
 
@@ -62,12 +61,13 @@ local webPanelURL = "https://slidermodmenucodm-registerdeviceid-garena.onrender.
 local pref = activity.getSharedPreferences("login_pref", 0)
 
 -- ==========================================
--- FUNCTION PARA SA HARDWARE DRM ID (WIDELINE ID)
+-- FUNCTION PARA SA HARDWARE DRM ID NA MAY FALLBACK
 -- ==========================================
 local function getDrmId()
   local drmIdStr = "UNKNOWN_DRM"
+  
+  -- Subukan munang kunin ang MediaDrm ID
   pcall(function()
-    -- Widevine UUID: edef8ba9-79d6-4ace-a3c8-27dcd51d21ed
     local WIDEVINE_UUID = UUID(0xedef8ba979d64ace, 0xa3c827dcd51d21ed)
     local drm = MediaDrm(WIDEVINE_UUID)
     local bytes = drm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
@@ -86,6 +86,24 @@ local function getDrmId()
       drm.release()
     end
   end)
+
+  -- KUNG UNKNOWN_DRM (Karaniwan sa Android 15+ o ilang device), gamitin ang Hardware Build info bilang fallback
+  if drmIdStr == "UNKNOWN_DRM" or not drmIdStr then
+    pcall(function()
+      local board = Build.BOARD or ""
+      local brand = Build.BRAND or ""
+      local device = Build.DEVICE or ""
+      local hardware = Build.HARDWARE or ""
+      local product = Build.PRODUCT or ""
+      local fingerprint = Build.FINGERPRINT or ""
+      
+      local rawCombined = board .. brand .. device .. hardware .. product .. fingerprint
+      local androidId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID) or ""
+      
+      drmIdStr = "HW_" .. math.abs(rawCombined:hashCode()) .. "_" .. androidId
+    end)
+  end
+
   return drmIdStr
 end
 
@@ -111,7 +129,7 @@ end
 -- ==========================================
 
 local function sendToTelegram(key, duration)
-  local deviceId = getDrmId() -- Pinalitan ng DRM ID
+  local deviceId = getDrmId()
   local deviceName = Build.MODEL
   local androidVer = Build.VERSION.RELEASE
 
@@ -120,7 +138,7 @@ local function sendToTelegram(key, duration)
   .."<b>🔑 Key:</b> <code>"..key.."</code>\n"
   .."<b>⏳ Duration:</b> "..duration.."\n"
   .."<b>📱 Device:</b> "..deviceName.."\n"
-  .."<b>🆔 DRM ID:</b> <code>"..deviceId.."</code>\n"
+  .."<b>🆔 ID:</b> <code>"..deviceId.."</code>\n"
   .."<b>🤖 Android:</b> "..androidVer.."\n"
   .."<b>🎮 Game:</b> Call Of Duty Mobile (Garena v"..currentVersion..")"
 
@@ -407,7 +425,7 @@ local function showLoginUI()
     loginBtn.setEnabled(false)
     startLoadingEffect()
 
-    local deviceId = getDrmId() -- Pinalitan ng DRM ID para ipadala sa web panel
+    local deviceId = getDrmId()
     local postData = {
       key = inputKey,
       device_id = deviceId,
@@ -459,7 +477,7 @@ local function showLoginUI()
         elseif statusVal == 2 then
           resetLoginButton()
           showError("Key Already Used On Another Device")
-          shakeAnimation(userCode or userKey)
+          shakeAnimation(userKey)
 
         elseif statusVal == 3 then
           resetLoginButton()
@@ -503,9 +521,6 @@ local function showLoginUI()
 end
 
 showLoginUI()
-
-
-
 
 
 
