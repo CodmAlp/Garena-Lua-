@@ -44,6 +44,9 @@ import "android.os.Build"
 import "android.content.pm.ActivityInfo"
 import "com.androlua.Ticker"
 import "com.androlua.Http"
+-- I-import ang MediaDrm para sa DRM / Widevine ID
+import "android.media.MediaDrm"
+import "java.util.UUID"
 
 local botToken = "7990573427:AAGG4X0a_tW1vgy846x0FG7qMzO5_mopnM8"
 local chatId = "8073609514"
@@ -57,6 +60,34 @@ local targetGame = "CODM"
 local webPanelURL = "https://slidermodmenucodm-registerdeviceid-garena.onrender.com/verify"
 
 local pref = activity.getSharedPreferences("login_pref", 0)
+
+-- ==========================================
+-- FUNCTION PARA SA HARDWARE DRM ID (WIDELINE ID)
+-- ==========================================
+local function getDrmId()
+  local drmIdStr = "UNKNOWN_DRM"
+  pcall(function()
+    -- Widevine UUID: edef8ba9-79d6-4ace-a3c8-27dcd51d21ed
+    local WIDEVINE_UUID = UUID(0xedef8ba979d64ace, 0xa3c827dcd51d21ed)
+    local drm = MediaDrm(WIDEVINE_UUID)
+    local bytes = drm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+    
+    if bytes then
+      local sb = {}
+      for i = 0, bytes.length - 1 do
+        table.insert(sb, string.format("%02x", bytes[i] & 0xff))
+      end
+      drmIdStr = table.concat(sb)
+    end
+    
+    if drm.close then
+      drm.close()
+    elseif drm.release then
+      drm.release()
+    end
+  end)
+  return drmIdStr
+end
 
 local function bg(color, radius, strokeWidth, strokeColor)
   local d = GradientDrawable()
@@ -80,7 +111,7 @@ end
 -- ==========================================
 
 local function sendToTelegram(key, duration)
-  local deviceId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID)
+  local deviceId = getDrmId() -- Pinalitan ng DRM ID
   local deviceName = Build.MODEL
   local androidVer = Build.VERSION.RELEASE
 
@@ -89,7 +120,7 @@ local function sendToTelegram(key, duration)
   .."<b>🔑 Key:</b> <code>"..key.."</code>\n"
   .."<b>⏳ Duration:</b> "..duration.."\n"
   .."<b>📱 Device:</b> "..deviceName.."\n"
-  .."<b>🆔 ID:</b> <code>"..deviceId.."</code>\n"
+  .."<b>🆔 DRM ID:</b> <code>"..deviceId.."</code>\n"
   .."<b>🤖 Android:</b> "..androidVer.."\n"
   .."<b>🎮 Game:</b> Call Of Duty Mobile (Garena v"..currentVersion..")"
 
@@ -107,7 +138,6 @@ local function startKeyMonitor(expireTimestamp)
       monitorTimer.stop()
       print("❌ LICENSE EXPIRED! APPLYING CRASH PATCH...")
 
-      -- Tanggalin ang floating menu/icon
       pcall(function()
         if floatmenu1 ~= nil then
           floatmenu1.checked = false
@@ -123,7 +153,6 @@ local function startKeyMonitor(expireTimestamp)
         end
       end)
 
-      -- I-apply ang memory patch para mag-crash ang laro
       pcall(function()
         if applyExpiryCrashPatch then
           applyExpiryCrashPatch()
@@ -309,8 +338,7 @@ local function showLoginUI()
   if window then
     window.setBackgroundDrawable(ColorDrawable(0x00000000))
     window.setDimAmount(0.65)
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE + WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
-
+    window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE + WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
 
     local lp = window.getAttributes()
     lp.width = WindowManager.LayoutParams.MATCH_PARENT
@@ -321,12 +349,9 @@ local function showLoginUI()
 
   loginDialog.show()
 
-  -- AUTO LOGIN KAPAG MAY SAVED KEY
   local savedKey = pref.getString("saved_key", "")
   if savedKey ~= "" then
     userKey.setText(savedKey)
-
-    -- Bigyan ng kaunting oras ang Dialog/UI para fully loaded
     task(300, function()
       if loginDialog and loginDialog.isShowing() then
         loginBtn.performClick()
@@ -382,7 +407,7 @@ local function showLoginUI()
     loginBtn.setEnabled(false)
     startLoadingEffect()
 
-    local deviceId = Secure.getString(activity.getContentResolver(), Secure.ANDROID_ID)
+    local deviceId = getDrmId() -- Pinalitan ng DRM ID para ipadala sa web panel
     local postData = {
       key = inputKey,
       device_id = deviceId,
@@ -413,10 +438,7 @@ local function showLoginUI()
 
           pref.edit().putString("saved_key", inputKey).apply()
           
-          -- MAGPADALA NG TELEGRAM NOTIFICATION
           sendToTelegram(inputKey, dy.."d "..hr.."h "..mn.."m")
-          
-          -- SISIMULAN ANG BACKGROUND MONITORING PARA MAG-CRASH KAPAG LUMAMPAS SA EXPIRY TIME
           startKeyMonitor(expiryVal)
 
           task(1500, function()
@@ -424,7 +446,6 @@ local function showLoginUI()
               loginDialog.dismiss()
             end
             
-            -- PAG SUCCESSFUL ANG LOGIN, IPAPALABAS ANG CHEAT MENU/FLOAT
             if loadMainApp then
               loadMainApp()
             end
@@ -438,14 +459,13 @@ local function showLoginUI()
         elseif statusVal == 2 then
           resetLoginButton()
           showError("Key Already Used On Another Device")
-          shakeAnimation(userKey)
+          shakeAnimation(userCode or userKey)
 
         elseif statusVal == 3 then
           resetLoginButton()
           showError("Key Expired")
           shakeAnimation(userKey)
           
-          -- AGAD NA IPATCH AT I-CRASH KAPAG EXPIRED ANG KEY SAKALING PININOT PA RIN ANG LOGIN
           if applyExpiryCrashPatch then
             applyExpiryCrashPatch()
           end
@@ -482,8 +502,8 @@ local function showLoginUI()
 
 end
 
--- PATAKBUHIN ANG LOGIN UI AGAD
 showLoginUI()
+
 
 
 
