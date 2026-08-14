@@ -1767,6 +1767,17 @@ function wall.OnCheckedChangeListener()
 end
 
 
+wallred.ButtonDrawable.setColorFilter(PorterDuffColorFilter(0x9AFFFFFF, PorterDuff.Mode.SRC_ATOP))
+function wallred.OnCheckedChangeListener()
+  if wallred.checked then
+    HexPatches.MemoryPatch("libunity.so", 0x8CF23C8, "h20 00 80 D2 C0 03 5F D6")
+    idkcstmToast("WALLHACK RED: ACTIVATED")
+  else
+    HexPatches.MemoryPatch("libunity.so", 0x8CF23C8, "h00 00 80 D2 C0 03 5F D6")
+  end
+end
+
+
 hit.ButtonDrawable.setColorFilter(PorterDuffColorFilter(0x9AFFFFFF, PorterDuff.Mode.SRC_ATOP))
 function hit.OnCheckedChangeListener()
   if hit.checked then
